@@ -4,18 +4,21 @@ import { fetchWikiSummary } from "@/lib/wikipedia";
 import { fetchPOIs } from "@/lib/overpass";
 
 describe("lib/geocode.ts - geocodeDestination", () => {
-  const fetchSpy = vi.spyOn(globalThis, "fetch");
+  let originalFetch: typeof globalThis.fetch;
+  const mockFetch = vi.fn();
 
   beforeEach(() => {
-    fetchSpy.mockReset();
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = mockFetch;
+    mockFetch.mockReset();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch;
   });
 
   it("successfully returns coordinates and display name", async () => {
-    fetchSpy.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => [
         {
@@ -32,14 +35,14 @@ describe("lib/geocode.ts - geocodeDestination", () => {
       lng: 135.7681,
       displayName: "Kyoto, Japan",
     });
-    expect(fetchSpy).toHaveBeenCalledWith(
+    expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("q=Kyoto"),
       expect.any(Object)
     );
   });
 
   it("throws error on empty Nominatim response", async () => {
-    fetchSpy.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => [],
     } as Response);
@@ -48,7 +51,7 @@ describe("lib/geocode.ts - geocodeDestination", () => {
   });
 
   it("throws error on non-ok HTTP status", async () => {
-    fetchSpy.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
       status: 500,
     } as Response);
@@ -58,18 +61,21 @@ describe("lib/geocode.ts - geocodeDestination", () => {
 });
 
 describe("lib/wikipedia.ts - fetchWikiSummary", () => {
-  const fetchSpy = vi.spyOn(globalThis, "fetch");
+  let originalFetch: typeof globalThis.fetch;
+  const mockFetch = vi.fn();
 
   beforeEach(() => {
-    fetchSpy.mockReset();
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = mockFetch;
+    mockFetch.mockReset();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch;
   });
 
   it("successfully returns Wiki title and extract", async () => {
-    fetchSpy.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         title: "Kyoto",
@@ -85,7 +91,7 @@ describe("lib/wikipedia.ts - fetchWikiSummary", () => {
   });
 
   it("returns null if Wikipedia page not found", async () => {
-    fetchSpy.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: false,
     } as Response);
 
@@ -95,18 +101,21 @@ describe("lib/wikipedia.ts - fetchWikiSummary", () => {
 });
 
 describe("lib/overpass.ts - fetchPOIs", () => {
-  const fetchSpy = vi.spyOn(globalThis, "fetch");
+  let originalFetch: typeof globalThis.fetch;
+  const mockFetch = vi.fn();
 
   beforeEach(() => {
-    fetchSpy.mockReset();
+    originalFetch = globalThis.fetch;
+    globalThis.fetch = mockFetch;
+    mockFetch.mockReset();
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    globalThis.fetch = originalFetch;
   });
 
   it("fetches, parses, maps types, filters unnamed, and deduplicates POIs", async () => {
-    fetchSpy.mockResolvedValue({
+    mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
         elements: [

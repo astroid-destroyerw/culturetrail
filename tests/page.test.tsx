@@ -12,7 +12,7 @@ describe("app/page.tsx - Home Page", () => {
   it("renders correctly with hero text and inputs", () => {
     render(<Home />);
     expect(screen.getByText("Culture")).toBeInTheDocument();
-    expect(screen.getByText("Discover destinations. Live the culture.")).toBeInTheDocument();
+    expect(screen.getByText(/Discover destinations through their culture/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Destination/i)).toBeInTheDocument();
   });
 
@@ -22,17 +22,17 @@ describe("app/page.tsx - Home Page", () => {
     
     // Initial state: not selected
     expect(tagButton).toHaveAttribute("aria-pressed", "false");
-    expect(tagButton).not.toHaveClass("bg-accent");
+    expect(tagButton).not.toHaveClass("bg-accent/90");
 
     // Click to select
     fireEvent.click(tagButton);
     expect(tagButton).toHaveAttribute("aria-pressed", "true");
-    expect(tagButton).toHaveClass("bg-accent");
+    expect(tagButton).toHaveClass("bg-accent/90");
 
     // Click again to deselect
     fireEvent.click(tagButton);
     expect(tagButton).toHaveAttribute("aria-pressed", "false");
-    expect(tagButton).not.toHaveClass("bg-accent");
+    expect(tagButton).not.toHaveClass("bg-accent/90");
   });
 
   it("disables submit button until destination and at least one interest are populated", () => {
