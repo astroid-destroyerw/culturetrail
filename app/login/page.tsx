@@ -36,28 +36,25 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 relative overflow-hidden bg-background">
-      {/* Background glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
+    <main className="flex min-h-screen flex-col items-center justify-center px-6 relative overflow-hidden bg-background">
+      {/* Ambient glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-accent/8 rounded-full blur-[150px] pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-sm space-y-8">
         {/* Logo */}
-        <div className="text-center space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-foreground select-none">
-            Culture<span className="text-accent">Trail</span>
+        <div className="text-center space-y-1.5">
+          <h1 className="text-3xl font-bold tracking-tight text-foreground select-none">
+            Culture<span className="bg-clip-text text-transparent bg-gradient-to-r from-accent to-[#E8905E]">Trail</span>
           </h1>
-          <p className="text-sm text-foreground/60">Sign in to continue</p>
+          <p className="text-sm text-foreground/45">Sign in to continue</p>
         </div>
 
-        {/* Login Card */}
-        <div className="bg-foreground/[0.02] border border-foreground/10 rounded-2xl p-8 backdrop-blur-md shadow-2xl space-y-6">
+        {/* Card */}
+        <div className="bg-surface-1 rounded-2xl p-8 shadow-lg border border-[var(--border)] space-y-5">
           <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
             {/* Username */}
             <div className="space-y-2">
-              <label
-                htmlFor="username"
-                className="block text-sm font-semibold tracking-wide text-foreground"
-              >
+              <label htmlFor="username" className="block text-sm font-medium text-foreground/75">
                 Username
               </label>
               <input
@@ -69,16 +66,13 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Enter your username"
                 autoComplete="username"
-                className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] placeholder-foreground/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-surface-2 rounded-xl text-foreground placeholder-foreground/35 border border-[var(--border)] focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/40 transition-all disabled:opacity-40"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold tracking-wide text-foreground"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-foreground/75">
                 Password
               </label>
               <input
@@ -90,14 +84,14 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Enter your password"
                 autoComplete="current-password"
-                className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] placeholder-foreground/40 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-surface-2 rounded-xl text-foreground placeholder-foreground/35 border border-[var(--border)] focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/40 transition-all disabled:opacity-40"
               />
             </div>
 
-            {/* Error message */}
+            {/* Error */}
             {error && (
               <div
-                className="text-red-400 text-sm font-medium bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center"
+                className="text-red-400/90 text-sm bg-red-500/8 border border-red-500/15 rounded-xl p-3.5 text-center leading-relaxed"
                 role="alert"
               >
                 {error}
@@ -108,33 +102,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || !username.trim() || !password}
-              className={`w-full py-3.5 px-6 rounded-xl font-bold tracking-wide transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+              className={`w-full py-3.5 px-6 rounded-xl font-semibold transition-all duration-300 ${
                 !isLoading && username.trim() && password
-                  ? "bg-accent text-background hover:bg-[#C55B2E] cursor-pointer active:scale-[0.99]"
-                  : "bg-foreground/5 text-foreground/30 border border-foreground/10 cursor-not-allowed"
+                  ? "bg-accent text-background hover:brightness-110 hover:shadow-accent cursor-pointer active:scale-[0.99] shadow-md"
+                  : "bg-foreground/5 text-foreground/25 cursor-not-allowed"
               }`}
             >
               {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <svg
-                    className="animate-spin h-4 w-4 text-background"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
+                <span className="flex items-center justify-center gap-2.5">
+                  <svg className="animate-spin h-4 w-4 text-background" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
                   Signing in...
                 </span>
@@ -145,7 +123,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-xs text-foreground/30">
+        <p className="text-center text-xs text-foreground/25">
           CultureTrail &bull; Hackathon Demo
         </p>
       </div>
