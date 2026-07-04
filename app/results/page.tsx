@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GuideResponse } from "@/types";
-import { ArrowLeft, Sun, Compass, Moon, MapPin, BookOpen } from "lucide-react";
+import { ArrowLeft, Sun, Compass, Moon, MapPin, BookOpen, SlidersHorizontal } from "lucide-react";
 import dynamic from "next/dynamic";
 import FadeIn from "@/components/FadeIn";
 
@@ -56,6 +56,24 @@ export default function ResultsPage() {
   const [isCheckingStorage, setIsCheckingStorage] = useState(true);
   const [activeDayIdx, setActiveDayIdx] = useState(-1); // -1 = All Days
 
+  // Refine Panel States
+  const [refineDays, setRefineDays] = useState(3);
+  const [refineInterests, setRefineInterests] = useState<string[]>([]);
+  const [refineNotes, setRefineNotes] = useState("");
+  const [isRefineOpen, setIsRefineOpen] = useState(true); // Open by default!
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [refineError, setRefineError] = useState<string | null>(null);
+
+  const availableInterests = [
+    "Heritage & History",
+    "Food & Cuisine",
+    "Nature & Outdoors",
+    "Art & Design",
+    "Nightlife & Music",
+    "Local Markets",
+    "Festivals & Events",
+  ];
+
   useEffect(() => {
     try {
       const cached = sessionStorage.getItem("cultureGuideData");
@@ -69,6 +87,17 @@ export default function ResultsPage() {
         return;
       }
       setGuideData(parsed);
+
+      // Initialize Refine Panel fields from cache
+      const cachedParams = sessionStorage.getItem("cultureGuideParams");
+      if (cachedParams) {
+        const params = JSON.parse(cachedParams);
+        setRefineDays(params.days || parsed.days.length || 3);
+        setRefineInterests(params.interests || []);
+        setRefineNotes(params.notes || "");
+      } else {
+        setRefineDays(parsed.days.length || 3);
+      }
     } catch (err) {
       console.error("Error reading sessionStorage:", err);
       router.push("/");
@@ -86,6 +115,7 @@ export default function ResultsPage() {
   const handleNewSearch = () => {
     try {
       sessionStorage.removeItem("cultureGuideData");
+      sessionStorage.removeItem("cultureGuideParams");
     } catch (err) {
       console.warn("sessionStorage is not available:", err);
     }
@@ -99,6 +129,75 @@ export default function ResultsPage() {
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
       }
+    }
+  };
+
+  const handleRefineInterestToggle = (interest: string) => {
+    setRefineInterests((prev) =>
+      prev.includes(interest)
+        ? prev.filter((i) => i !== interest)
+        : [...prev, interest]
+    );
+  };
+
+  const handleRefineSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!guideData || refineInterests.length === 0 || isRegenerating) return;
+
+    setIsRegenerating(true);
+    setRefineError(null);
+
+    try {
+      const response = await fetch("/api/generate-guide", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          destination: guideData.destination,
+          days: refineDays,
+          interests: refineInterests,
+          notes: refineNotes.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        let errorMessage = "Failed to regenerate itinerary.";
+        try {
+          const errorData = await response.json();
+          if (errorData && errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch {
+          // ignore
+        }
+        setRefineError(errorMessage);
+        setIsRegenerating(false);
+        return;
+      }
+
+      const data = (await response.json()) as GuideResponse;
+
+      // Cache updated values
+      try {
+        sessionStorage.setItem("cultureGuideData", JSON.stringify(data));
+        sessionStorage.setItem("cultureGuideParams", JSON.stringify({
+          destination: guideData.destination,
+          days: refineDays,
+          interests: refineInterests,
+          notes: refineNotes.trim(),
+        }));
+      } catch (err) {
+        console.warn("sessionStorage is not available:", err);
+      }
+
+      setGuideData(data);
+      setActiveDayIdx(-1); // Reset back to All Days view on updates
+      setIsRegenerating(false);
+    } catch (err) {
+      console.error("Regeneration error:", err);
+      setRefineError("Couldn't reach the server. Check your connection and try again.");
+      setIsRegenerating(false);
     }
   };
 
@@ -157,6 +256,13 @@ export default function ResultsPage() {
             <ArrowLeft className="h-3.5 w-3.5" />
             New Search
           </button>
+
+          <a
+            href="/api/auth/logout"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full border border-foreground/20 text-foreground/60 hover:bg-foreground/5 hover:border-foreground/40 hover:text-foreground transition-all select-none"
+          >
+            Log out
+          </a>
         </div>
       </header>
 
@@ -188,7 +294,7 @@ export default function ResultsPage() {
           </FadeIn>
         )}
 
-        {/* Interactive Day Selection Map Stack */}
+        {/* Day Selector (Tabs) */}
         {guideData.days && guideData.days.length > 0 && (
           <FadeIn>
             <section className="space-y-8">
@@ -225,6 +331,133 @@ export default function ResultsPage() {
                     Day {dayData.day}
                   </button>
                 ))}
+              </div>
+
+              {/* Refine Your Trip Panel (Open by Default, Collapsible, Placed Below Day Selector, Above Map) */}
+              <div className="bg-foreground/[0.02] border border-foreground/10 rounded-2xl p-6 backdrop-blur-md shadow-lg space-y-6 print:hidden">
+                <div className="flex justify-between items-center border-b border-foreground/10 pb-4">
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="h-5 w-5 text-accent" />
+                    <span className="font-bold text-foreground">Refine Your Trip</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsRefineOpen(!isRefineOpen)}
+                    className="text-xs font-semibold px-4 py-2 rounded-full border border-foreground/20 text-foreground/80 hover:bg-foreground/5 hover:border-foreground/45 transition-all cursor-pointer select-none"
+                  >
+                    {isRefineOpen ? "Hide Refine Panel" : "Show Refine Panel"}
+                  </button>
+                </div>
+
+                {isRefineOpen && (
+                  <form onSubmit={handleRefineSubmit} className="space-y-6 text-left" autoComplete="off">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                      
+                      {/* Trip Length Field */}
+                      <div className="space-y-2 col-span-1">
+                        <label
+                          htmlFor="refine-days"
+                          className="block text-sm font-semibold tracking-wide text-foreground"
+                        >
+                          How many days?
+                        </label>
+                        <input
+                          type="number"
+                          id="refine-days"
+                          required
+                          disabled={isRegenerating}
+                          min={1}
+                          max={30}
+                          value={refineDays}
+                          onChange={(e) => setRefineDays(parseInt(e.target.value) || 1)}
+                          className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] opacity-100 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                      </div>
+
+                      {/* Notes/Curiosities Field */}
+                      <div className="space-y-2 md:col-span-2">
+                        <label
+                          htmlFor="refine-notes"
+                          className="block text-sm font-semibold tracking-wide text-foreground"
+                        >
+                          What are you curious about?
+                        </label>
+                        <textarea
+                          id="refine-notes"
+                          rows={2}
+                          disabled={isRegenerating}
+                          value={refineNotes}
+                          onChange={(e) => setRefineNotes(e.target.value)}
+                          placeholder="e.g. Focus on historic architecture, street food tour"
+                          className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] placeholder-foreground/60 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors resize-y disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Interests Field */}
+                    <fieldset className="space-y-3">
+                      <legend className="text-sm font-semibold tracking-wide text-foreground">
+                        Interests <span className="text-accent">*</span> <span className="text-xs text-foreground/50 font-normal">(Select at least one)</span>
+                      </legend>
+                      <div className="flex flex-wrap gap-2">
+                        {availableInterests.map((interest) => {
+                          const isSelected = refineInterests.includes(interest);
+                          return (
+                            <button
+                              key={interest}
+                              type="button"
+                              disabled={isRegenerating}
+                              aria-pressed={isSelected}
+                              onClick={() => handleRefineInterestToggle(interest)}
+                              className={`px-4 py-2 text-xs md:text-sm font-medium rounded-full border transition-all duration-200 select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                                isSelected
+                                  ? "bg-accent border-accent text-background font-semibold hover:bg-[#C55B2E]"
+                                  : "bg-[#1A1714] border-stone-700 text-[#F5EFE6]/80 hover:text-[#F5EFE6] hover:border-stone-600 hover:bg-[#221F1C]"
+                              } ${isRegenerating ? "opacity-50 cursor-not-allowed" : ""}`}
+                            >
+                              {interest}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </fieldset>
+
+                    {/* Refine Error Message */}
+                    {refineError && (
+                      <div
+                        className="text-red-400 text-sm font-medium bg-red-500/10 border border-red-500/20 rounded-xl p-3 text-center"
+                        role="alert"
+                      >
+                        {refineError}
+                      </div>
+                    )}
+
+                    {/* CTA Submit Button */}
+                    <div className="pt-2">
+                      <button
+                        type="submit"
+                        disabled={refineInterests.length === 0 || isRegenerating}
+                        className={`w-full py-3.5 px-6 rounded-xl font-bold tracking-wide transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
+                          refineInterests.length > 0 && !isRegenerating
+                            ? "bg-accent text-background hover:bg-[#C55B2E] cursor-pointer active:scale-[0.99]"
+                            : "bg-foreground/5 text-foreground/30 border border-foreground/10 cursor-not-allowed"
+                        }`}
+                      >
+                        {isRegenerating ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-background" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Regenerating Itinerary...
+                          </span>
+                        ) : (
+                          "Regenerate Itinerary"
+                        )}
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
               {/* Map Component */}

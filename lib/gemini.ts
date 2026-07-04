@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { GuideRequest, GuideResponse } from "@/types";
+import { GuideRequest, GuideResponse, RefineRequest, RefineResponse } from "@/types";
 import { POI } from "./overpass";
 import { WikiSummary } from "./wikipedia";
 
@@ -120,3 +120,65 @@ Guidelines:
 
   return parsedResponse;
 }
+
+export async function refineGuide(input: RefineRequest): Promise<RefineResponse> {
+  const client = getGenAIClient();
+  const model = client.getGenerativeModel({
+    model: "gemini-2.5-flash",
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+  });
+
+  const currentGuideJson = JSON.stringify(input.currentGuide, null, 2);
+
+  const prompt = `
+You are an expert travel planner with deep local knowledge. A user is refining their existing cultural itinerary for ${input.destination}.
+
+USER'S CHAT INSTRUCTION: "${input.instruction}"
+
+CURRENT ITINERARY (JSON):
+${currentGuideJson}
+
+TASK:
+Apply the user's instruction to modify the itinerary. You may:
+- Swap or replace specific activities on specific days/times
+- Re-theme a day or time slot to match a new focus (e.g. food, nature, nightlife)
+- Add hidden gems, adjust pacing, or make the schedule more relaxed/intense
+- Keep unchanged days EXACTLY as they are unless the instruction specifically targets them
+
+Return a JSON object with EXACTLY this structure:
+{
+  "guide": { /* the complete updated itinerary with the same schema as the input */ },
+  "changeSummary": "A single natural-language sentence (max 25 words) describing exactly what changed, written as if talking to the user. Be specific, warm, and conversational."
+}
+
+IMPORTANT:
+- The "guide" must include ALL days, not just the modified ones
+- Preserve the "wikiSummary" field from the original if present
+- Preserve real lat/lng coordinates for any places you keep
+- For any NEW places you suggest, use realistic coordinates
+- The "changeSummary" should describe only what actually changed, not repeat the whole itinerary
+- Return ONLY raw JSON — no markdown, no code fences, no prose outside the JSON
+`;
+
+  const result = await model.generateContent(prompt);
+  const text = result.response.text();
+
+  if (!text) {
+    throw new Error("Empty response received from Gemini model during refinement.");
+  }
+
+  const parsed = JSON.parse(text) as RefineResponse;
+
+  if (!parsed.guide || !parsed.guide.destination || !Array.isArray(parsed.guide.days)) {
+    throw new Error("Refined guide does not match the expected structure.");
+  }
+
+  if (!parsed.changeSummary || typeof parsed.changeSummary !== "string") {
+    parsed.changeSummary = "Your itinerary has been updated!";
+  }
+
+  return parsed;
+}
+

@@ -90,6 +90,12 @@ export default function Home() {
 
       try {
         sessionStorage.setItem("cultureGuideData", JSON.stringify(data));
+        sessionStorage.setItem("cultureGuideParams", JSON.stringify({
+          destination: destination.trim(),
+          days,
+          interests,
+          notes: notes.trim(),
+        }));
       } catch (err) {
         console.warn("sessionStorage is not available:", err);
       }
@@ -115,6 +121,16 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-start p-6 relative overflow-hidden bg-background">
       {/* Decorative gradient background glow */}
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] md:w-[600px] h-[350px] md:h-[600px] bg-accent/10 rounded-full blur-[80px] md:blur-[120px] pointer-events-none" />
+
+      {/* Top bar: Log out */}
+      <div className="absolute top-4 right-6 z-50">
+        <a
+          href="/api/auth/logout"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-4 py-2 rounded-full border border-foreground/20 text-foreground/70 hover:bg-foreground/5 hover:border-foreground/40 hover:text-foreground transition-all select-none"
+        >
+          Log out
+        </a>
+      </div>
 
       {/* Hero Section */}
       <section className="flex flex-col items-center justify-center min-h-screen w-full relative z-10 py-12">

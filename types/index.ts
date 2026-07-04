@@ -25,3 +25,14 @@ export interface GuideResponse {
   days: DayItinerary[];
   wikiSummary?: string;
 }
+
+export interface RefineRequest {
+  currentGuide: GuideResponse;
+  instruction: string;
+  destination: string;
+}
+
+export interface RefineResponse {
+  guide: GuideResponse;
+  changeSummary: string;
+}
