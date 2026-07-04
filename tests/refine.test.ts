@@ -88,7 +88,7 @@ describe("app/api/refine-guide/route.ts - POST Handler", () => {
       changeSummary: "Added Kinkaku-ji to day 1.",
     };
 
-    vi.mocked(refineGuide).mockResolvedValue(mockOutput as any);
+    vi.mocked(refineGuide).mockResolvedValue(mockOutput as unknown as Awaited<ReturnType<typeof refineGuide>>);
 
     const req = createRequest({
       currentGuide: { destination: "Kyoto", days: [] },
