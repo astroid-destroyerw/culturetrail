@@ -170,6 +170,7 @@ Rules:
     .replace(/\s*```$/i, "")
     .trim();
 
+  let parsed: RefineResponse;
   try {
     parsed = JSON.parse(text) as RefineResponse;
   } catch {
