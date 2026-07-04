@@ -3,72 +3,62 @@
 @tailwind utilities;
 
 :root {
-  /* Core palette — warm charcoal, not stark black */
-  --background: #16130F;
-  --foreground: #EDE8E0;
+  /* ── Core palette — warm parchment, not clinical white ── */
+  --background: #F9F5EF;
+  --foreground: #1E160C;
 
-  /* Accent — muted dusty terracotta, premium not loud */
-  --accent: #C4623A;
+  /* ── Accent — cognac / rich warm sienna ── */
+  --accent: #A0522D;
 
-  /* Surface layers — gentle depth through warmth, not contrast */
-  --surface-1: #1C1914;   /* cards, panels */
-  --surface-2: #221F1A;   /* hover / slightly elevated */
-  --surface-3: #2A2620;   /* deeper inset / active */
+  /* ── Surface layers — linen depth ── */
+  --surface-1: #F2EDE4;   /* cards, panels */
+  --surface-2: #E9E2D6;   /* input backgrounds, slightly recessed */
+  --surface-3: #DED6C8;   /* deeply recessed / active/hover */
 
-  /* Border — whisper-thin, not structural */
-  --border: rgba(245, 235, 220, 0.08);
-  --border-hover: rgba(245, 235, 220, 0.14);
+  /* ── Borders — warm brown whisper ── */
+  --border: rgba(30, 22, 12, 0.09);
+  --border-hover: rgba(30, 22, 12, 0.18);
 
-  /* Shadows — diffused, warm, low-opacity */
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.18);
-  --shadow-md: 0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2);
-  --shadow-lg: 0 8px 32px rgba(0,0,0,0.45), 0 2px 8px rgba(0,0,0,0.25);
-  --shadow-accent: 0 4px 20px rgba(196,98,58,0.18);
+  /* ── Shadows — warm sepia diffused ── */
+  --shadow-sm:     0 1px 4px rgba(50, 30, 10, 0.10), 0 1px 2px rgba(50, 30, 10, 0.07);
+  --shadow-md:     0 4px 20px rgba(50, 30, 10, 0.12), 0 1px 6px rgba(50, 30, 10, 0.07);
+  --shadow-lg:     0 10px 40px rgba(50, 30, 10, 0.15), 0 2px 10px rgba(50, 30, 10, 0.08);
+  --shadow-accent: 0 4px 22px rgba(160, 82, 45, 0.22);
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  line-height: 1.65;
+  line-height: 1.7;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Smooth scroll ──────────────────────────────────────────────── */
 html { scroll-behavior: smooth; }
 
-/* ── Global input / textarea baseline ─────────────────────────── */
-input, textarea, select {
-  color-scheme: dark;
-}
+input, textarea, select { color-scheme: light; }
 
-/* ── Focus-visible global ring ─────────────────────────────────── */
+/* Focus ring */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* ── Custom scrollbar (webkit) ─────────────────────────────────── */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+/* Slim warm scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(245,235,220,0.12);
+  background: rgba(30, 22, 12, 0.14);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(245,235,220,0.22);
+  background: rgba(30, 22, 12, 0.26);
 }
 
-/* ── Print overrides ───────────────────────────────────────────── */
+/* ── Print ── */
 @media print {
-  body {
-    background: white !important;
-    color: black !important;
-  }
-  .grid > div, section, fieldset {
-    page-break-inside: avoid;
-    break-inside: avoid;
-  }
+  body { background: white !important; color: black !important; }
+  .grid > div, section, fieldset { page-break-inside: avoid; break-inside: avoid; }
   h1, h2, h3 { color: black !important; }
   p, span, li, legend { color: #222 !important; }
   .leaflet-container { display: none !important; }

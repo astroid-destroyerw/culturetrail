@@ -123,6 +123,24 @@ export default function LoginPage() {
           </form>
         </div>
 
+        {/* Demo credentials hint */}
+        <div className="bg-surface-1 border border-[var(--border)] rounded-xl p-4 space-y-2 shadow-sm">
+          <p className="text-xs font-semibold text-foreground/50 uppercase tracking-widest text-center">
+            Demo Credentials
+          </p>
+          <div className="flex justify-center gap-6 text-sm font-mono">
+            <div className="space-y-1 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-foreground/35 font-sans">Username</p>
+              <p className="font-semibold text-foreground/80 tracking-wide">culturetrail</p>
+            </div>
+            <div className="w-px bg-[var(--border)]" />
+            <div className="space-y-1 text-center">
+              <p className="text-[10px] uppercase tracking-wider text-foreground/35 font-sans">Password</p>
+              <p className="font-semibold text-foreground/80 tracking-wide">culturetrail2026</p>
+            </div>
+          </div>
+        </div>
+
         <p className="text-center text-xs text-foreground/25">
           CultureTrail &bull; Hackathon Demo
         </p>

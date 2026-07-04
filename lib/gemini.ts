@@ -170,10 +170,9 @@ Rules:
     .replace(/\s*```$/i, "")
     .trim();
 
-  let parsed: RefineResponse;
   try {
     parsed = JSON.parse(text) as RefineResponse;
-  } catch (parseErr) {
+  } catch {
     console.error("refineGuide: JSON.parse failed. Raw text:", text.slice(0, 500));
     throw new SyntaxError("AI returned malformed JSON. Please try rephrasing your request.");
   }
