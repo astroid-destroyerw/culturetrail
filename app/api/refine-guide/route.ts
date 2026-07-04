@@ -15,6 +15,13 @@ export async function POST(request: Request) {
       );
     }
 
+    if (instruction.length > 500) {
+      return NextResponse.json(
+        { error: "Instruction exceeds maximum length of 500 characters." },
+        { status: 400 }
+      );
+    }
+
     if (!currentGuide || !destination) {
       return NextResponse.json(
         { error: "currentGuide and destination are required." },

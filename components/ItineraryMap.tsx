@@ -27,15 +27,16 @@ const getPOIColorGroup = (type: string) => {
   }
 };
 
-const createCustomIcon = (group: "attraction" | "hiddenGem" | "cultural", isDimmed: boolean) => {
+const createCustomIcon = (activityName: string, group: "attraction" | "hiddenGem" | "cultural", isDimmed: boolean) => {
   let color = "#D96C3F"; // Terracotta
   if (group === "hiddenGem") color = "#0D9488"; // Teal
   if (group === "cultural") color = "#D97706"; // Gold
 
   const opacity = isDimmed ? 0.35 : 1.0;
+  const escapedName = activityName.replace(/"/g, "&quot;");
 
   return L.divIcon({
-    html: `<div style="background-color: ${color}; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.5); opacity: ${opacity}; transition: opacity 0.3s ease;"></div>`,
+    html: `<div role="img" aria-label="${escapedName} marker" style="background-color: ${color}; width: 15px; height: 15px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 6px rgba(0,0,0,0.5); opacity: ${opacity}; transition: opacity 0.3s ease;"></div>`,
     className: "custom-marker-icon",
     iconSize: [15, 15],
     iconAnchor: [7.5, 7.5],
@@ -107,7 +108,7 @@ export default function ItineraryMap({ days, activeDayIdx }: ItineraryMapProps) 
               if (!activity || activity.lat === 0 || activity.lng === 0) return null;
 
               const group = getPOIColorGroup(activity.type);
-              const customIcon = createCustomIcon(group, isDayDimmed);
+              const customIcon = createCustomIcon(activity.activity, group, isDayDimmed);
 
               return (
                 <Marker
