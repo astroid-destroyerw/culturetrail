@@ -30,4 +30,7 @@ body {
   p, span, li, legend {
     color: #222 !important;
   }
+  .leaflet-container {
+    display: none !important;
+  }
 }

@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GuideResponse } from "@/types";
 import { ArrowLeft, Sun, Compass, Moon, MapPin, BookOpen } from "lucide-react";
+import dynamic from "next/dynamic";
 import FadeIn from "@/components/FadeIn";
+
+const ItineraryMap = dynamic(() => import("@/components/ItineraryMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] md:h-[450px] rounded-2xl bg-foreground/5 border border-foreground/10 flex items-center justify-center animate-pulse print:hidden">
+      <span className="text-sm text-foreground/50">Loading Map...</span>
+    </div>
+  ),
+});
 
 function ResultsSkeleton() {
   return (
@@ -23,6 +33,7 @@ function ResultsSkeleton() {
           <div className="h-10 w-24 bg-foreground/10 rounded-full"></div>
           <div className="h-10 w-24 bg-foreground/10 rounded-full"></div>
         </div>
+        <div className="h-[400px] bg-foreground/5 rounded-xl border border-foreground/10"></div>
         <div className="space-y-8">
           {[1, 2, 3].map((n) => (
             <div key={n} className="flex gap-4 items-start">
@@ -43,7 +54,7 @@ export default function ResultsPage() {
   const router = useRouter();
   const [guideData, setGuideData] = useState<GuideResponse | null>(null);
   const [isCheckingStorage, setIsCheckingStorage] = useState(true);
-  const [activeDayIdx, setActiveDayIdx] = useState(0);
+  const [activeDayIdx, setActiveDayIdx] = useState(-1); // -1 = All Days
 
   useEffect(() => {
     try {
@@ -81,11 +92,19 @@ export default function ResultsPage() {
     router.push("/");
   };
 
+  const handleDaySelect = (idx: number) => {
+    setActiveDayIdx(idx);
+    if (idx >= 0) {
+      const element = document.getElementById(`day-card-${idx + 1}`);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
+
   if (isCheckingStorage || !guideData) {
     return <ResultsSkeleton />;
   }
-
-  const currentDay = guideData.days[activeDayIdx];
 
   const timesOfDay = [
     { key: "morning", label: "Morning", icon: Sun, color: "text-amber-400 border-amber-400/20" },
@@ -169,15 +188,34 @@ export default function ResultsPage() {
           </FadeIn>
         )}
 
-        {/* Day Selector (Tabs) */}
+        {/* Interactive Day Selection Map Stack */}
         {guideData.days && guideData.days.length > 0 && (
           <FadeIn>
             <section className="space-y-8">
-              <div className="flex flex-wrap gap-2 justify-center border-b border-foreground/10 pb-6 print:hidden">
+              {/* Day Tabs */}
+              <div 
+                className="flex flex-wrap gap-2 justify-center border-b border-foreground/10 pb-6 print:hidden"
+                role="tablist"
+                aria-label="Itinerary day selector"
+              >
+                <button
+                  role="tab"
+                  aria-selected={activeDayIdx === -1}
+                  onClick={() => handleDaySelect(-1)}
+                  className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
+                    activeDayIdx === -1
+                      ? "bg-accent text-background shadow-lg shadow-accent/20"
+                      : "bg-[#1A1714] text-foreground/75 hover:bg-[#221F1C] border border-stone-700"
+                  }`}
+                >
+                  All Days
+                </button>
                 {guideData.days.map((dayData, idx) => (
                   <button
                     key={dayData.day}
-                    onClick={() => setActiveDayIdx(idx)}
+                    role="tab"
+                    aria-selected={activeDayIdx === idx}
+                    onClick={() => handleDaySelect(idx)}
                     className={`px-6 py-2.5 rounded-full text-sm font-semibold transition-all duration-300 cursor-pointer ${
                       activeDayIdx === idx
                         ? "bg-accent text-background shadow-lg shadow-accent/20"
@@ -189,64 +227,90 @@ export default function ResultsPage() {
                 ))}
               </div>
 
-              {/* Active Day Itinerary Timeline */}
-              {currentDay ? (
-                <div className="space-y-10 relative before:absolute before:top-2 before:bottom-2 before:left-[22px] md:before:left-[26px] before:w-0.5 before:bg-foreground/10 print:before:bg-gray-300">
-                  {timesOfDay.map((time) => {
-                    const detail = currentDay[time.key];
-                    if (!detail || !detail.activity) return null;
+              {/* Map Component */}
+              <ItineraryMap days={guideData.days} activeDayIdx={activeDayIdx} />
 
-                    const Icon = time.icon;
+              {/* Day-by-Day Detailed Itinerary Cards */}
+              <div className="space-y-16 pt-8">
+                {guideData.days.map((dayData, idx) => {
+                  const isHighlighted = activeDayIdx === idx;
+                  return (
+                    <section 
+                      key={dayData.day}
+                      id={`day-card-${dayData.day}`}
+                      className={`p-6 md:p-8 rounded-2xl border transition-all duration-500 bg-[#1A1714]/10 ${
+                        isHighlighted 
+                          ? "border-accent bg-[#1C1917] shadow-xl shadow-accent/5 ring-1 ring-accent"
+                          : "border-foreground/10"
+                      }`}
+                    >
+                      <h3 className="text-xl md:text-2xl font-extrabold text-foreground mb-8 flex items-center gap-3">
+                        <span className={`w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-sm border transition-colors ${
+                          isHighlighted ? "bg-accent text-background border-accent" : "bg-foreground/5 text-foreground/70 border-foreground/10"
+                        }`}>
+                          D{dayData.day}
+                        </span>
+                        Day {dayData.day} Details
+                      </h3>
 
-                    return (
-                      <div key={time.key} className="flex gap-4 md:gap-6 items-start relative group">
-                        {/* Timeline Icon Marker */}
-                        <div className={`h-11 md:h-13 w-11 md:w-13 rounded-full flex items-center justify-center bg-[#1A1714] border-2 ${time.color} relative z-10 shrink-0 shadow-md`}>
-                          <Icon className="h-5 w-5 md:h-6 md:w-6" />
-                        </div>
+                      <div className="space-y-10 relative before:absolute before:top-2 before:bottom-2 before:left-[22px] md:before:left-[26px] before:w-0.5 before:bg-foreground/10 print:before:bg-gray-300">
+                        {timesOfDay.map((time) => {
+                          const detail = dayData[time.key];
+                          if (!detail || !detail.activity) return null;
 
-                        {/* Content Card */}
-                        <div className="flex-1 bg-foreground/[0.02] border border-foreground/10 rounded-2xl p-5 md:p-6 backdrop-blur-md shadow-xl transition-all duration-300 hover:border-accent/30 hover:bg-foreground/[0.03] print:bg-white print:border-gray-300 print:shadow-none">
-                          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                            <span className="text-xs md:text-sm font-extrabold text-accent/90 tracking-wide uppercase">
-                              {time.label}
-                            </span>
-                            {detail.type && (
-                              <span className={`text-[10px] md:text-xs font-semibold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${getTypeBadgeStyles(detail.type)}`}>
-                                {detail.type}
-                              </span>
-                            )}
-                          </div>
+                          const Icon = time.icon;
 
-                          <h3 className="text-lg md:text-xl font-bold tracking-tight text-foreground mb-2 print:text-black">
-                            {detail.activity}
-                          </h3>
+                          return (
+                            <div key={time.key} className="flex gap-4 md:gap-6 items-start relative group">
+                              {/* Timeline Icon Marker */}
+                              <div className={`h-11 md:h-13 w-11 md:w-13 rounded-full flex items-center justify-center bg-[#1A1714] border-2 ${time.color} relative z-10 shrink-0 shadow-md`}>
+                                <Icon className="h-5 w-5 md:h-6 md:w-6" />
+                              </div>
 
-                          <p className="text-sm md:text-base text-foreground/80 leading-relaxed mb-4 print:text-gray-700">
-                            {detail.description}
-                          </p>
+                              {/* Content Card */}
+                              <div className="flex-1 bg-foreground/[0.02] border border-foreground/10 rounded-2xl p-5 md:p-6 backdrop-blur-md shadow-xl transition-all duration-300 hover:border-accent/30 hover:bg-foreground/[0.03] print:bg-white print:border-gray-300 print:shadow-none">
+                                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                                  <span className="text-xs md:text-sm font-extrabold text-accent/90 tracking-wide uppercase">
+                                    {time.label}
+                                  </span>
+                                  {detail.type && (
+                                    <span className={`text-[10px] md:text-xs font-semibold px-2.5 py-0.5 rounded-full border uppercase tracking-wider ${getTypeBadgeStyles(detail.type)}`}>
+                                      {detail.type}
+                                    </span>
+                                  )}
+                                </div>
 
-                          {detail.lat !== 0 && detail.lng !== 0 && (
-                            <div className="flex items-center gap-1.5 mt-2">
-                              <a
-                                href={`https://www.google.com/maps/search/?api=1&query=${detail.lat},${detail.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline cursor-pointer select-none print:text-gray-600 print:underline"
-                              >
-                                <MapPin className="h-3.5 w-3.5" />
-                                View on Map ({detail.lat.toFixed(4)}, {detail.lng.toFixed(4)})
-                              </a>
+                                <h4 className="text-lg md:text-xl font-bold tracking-tight text-foreground mb-2 print:text-black">
+                                  {detail.activity}
+                                </h4>
+
+                                <p className="text-sm md:text-base text-foreground/80 leading-relaxed mb-4 print:text-gray-700">
+                                  {detail.description}
+                                </p>
+
+                                {detail.lat !== 0 && detail.lng !== 0 && (
+                                  <div className="flex items-center gap-1.5 mt-2">
+                                    <a
+                                      href={`https://www.google.com/maps/search/?api=1&query=${detail.lat},${detail.lng}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs text-accent hover:underline cursor-pointer select-none print:text-gray-600 print:underline"
+                                    >
+                                      <MapPin className="h-3.5 w-3.5" />
+                                      View on Map ({detail.lat.toFixed(4)}, {detail.lng.toFixed(4)})
+                                    </a>
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          )}
-                        </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <p className="text-center text-foreground/50">No itinerary data available for this day.</p>
-              )}
+                    </section>
+                  );
+                })}
+              </div>
+
             </section>
           </FadeIn>
         )}
