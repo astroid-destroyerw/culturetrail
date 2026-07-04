@@ -123,56 +123,69 @@ Guidelines:
 
 export async function refineGuide(input: RefineRequest): Promise<RefineResponse> {
   const client = getGenAIClient();
+  // Do NOT set responseMimeType here — the nested {guide, changeSummary} wrapper
+  // confuses Gemini's JSON-mode schema inference and causes malformed output.
+  // We extract JSON manually from the text response instead.
   const model = client.getGenerativeModel({
     model: "gemini-2.5-flash",
-    generationConfig: {
-      responseMimeType: "application/json",
-    },
   });
 
-  const currentGuideJson = JSON.stringify(input.currentGuide, null, 2);
+  // Compact the itinerary to reduce token pressure (omit wikiSummary body from prompt)
+  const compactGuide = {
+    destination: input.currentGuide.destination,
+    days: input.currentGuide.days,
+  };
+  const currentGuideJson = JSON.stringify(compactGuide);
 
-  const prompt = `
-You are an expert travel planner with deep local knowledge. A user is refining their existing cultural itinerary for ${input.destination}.
+  const prompt = `You are an expert travel planner. A user wants to refine their itinerary for ${input.destination}.
 
-USER'S CHAT INSTRUCTION: "${input.instruction}"
+USER INSTRUCTION: "${input.instruction}"
 
-CURRENT ITINERARY (JSON):
+CURRENT ITINERARY:
 ${currentGuideJson}
 
-TASK:
-Apply the user's instruction to modify the itinerary. You may:
-- Swap or replace specific activities on specific days/times
-- Re-theme a day or time slot to match a new focus (e.g. food, nature, nightlife)
-- Add hidden gems, adjust pacing, or make the schedule more relaxed/intense
-- Keep unchanged days EXACTLY as they are unless the instruction specifically targets them
+Modify the itinerary according to the instruction. Keep unchanged days exactly as they are.
+For new or changed activities, use realistic coordinates.
 
-Return a JSON object with EXACTLY this structure:
-{
-  "guide": { /* the complete updated itinerary with the same schema as the input */ },
-  "changeSummary": "A single natural-language sentence (max 25 words) describing exactly what changed, written as if talking to the user. Be specific, warm, and conversational."
-}
+Respond with ONLY a valid JSON object — no markdown fences, no extra text — in this exact shape:
+{"guide":{"destination":"...","days":[...]},"changeSummary":"One warm conversational sentence describing what changed (max 20 words)."}
 
-IMPORTANT:
-- The "guide" must include ALL days, not just the modified ones
-- Preserve the "wikiSummary" field from the original if present
-- Preserve real lat/lng coordinates for any places you keep
-- For any NEW places you suggest, use realistic coordinates
-- The "changeSummary" should describe only what actually changed, not repeat the whole itinerary
-- Return ONLY raw JSON — no markdown, no code fences, no prose outside the JSON
-`;
+Rules:
+- "guide.days" must contain ALL days (modified + unchanged)
+- Each day must have "day", "morning", "afternoon", "evening" keys
+- Each time slot must have "activity", "description", "type", "lat", "lng"
+- "changeSummary" must be a non-empty string`;
 
   const result = await model.generateContent(prompt);
-  const text = result.response.text();
+  const rawText = result.response.text();
 
-  if (!text) {
+  if (!rawText || !rawText.trim()) {
     throw new Error("Empty response received from Gemini model during refinement.");
   }
 
-  const parsed = JSON.parse(text) as RefineResponse;
+  // Strip accidental markdown code fences if present
+  const text = rawText
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+
+  let parsed: RefineResponse;
+  try {
+    parsed = JSON.parse(text) as RefineResponse;
+  } catch (parseErr) {
+    console.error("refineGuide: JSON.parse failed. Raw text:", text.slice(0, 500));
+    throw new SyntaxError("AI returned malformed JSON. Please try rephrasing your request.");
+  }
 
   if (!parsed.guide || !parsed.guide.destination || !Array.isArray(parsed.guide.days)) {
+    console.error("refineGuide: unexpected structure", JSON.stringify(parsed).slice(0, 300));
     throw new Error("Refined guide does not match the expected structure.");
+  }
+
+  // Carry wikiSummary forward if Gemini dropped it
+  if (input.currentGuide.wikiSummary && !parsed.guide.wikiSummary) {
+    parsed.guide.wikiSummary = input.currentGuide.wikiSummary;
   }
 
   if (!parsed.changeSummary || typeof parsed.changeSummary !== "string") {
