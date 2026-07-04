@@ -37,7 +37,7 @@ describe("app/api/generate-guide/route.ts - POST Handler", () => {
     vi.clearAllMocks();
   });
 
-  const createRequest = (body: any) => {
+  const createRequest = (body: Record<string, unknown>) => {
     return new NextRequest("http://localhost/api/generate-guide", {
       method: "POST",
       headers: {
@@ -117,7 +117,7 @@ describe("app/api/generate-guide/route.ts - POST Handler", () => {
         },
       ],
     };
-    vi.mocked(generateCultureGuide).mockResolvedValue(mockOutput as any);
+    vi.mocked(generateCultureGuide).mockResolvedValue(mockOutput as unknown as Awaited<ReturnType<typeof generateCultureGuide>>);
 
     const req = createRequest({
       destination: "Paris",

@@ -9,7 +9,7 @@ vi.mock("@google/generative-ai", () => {
   }));
   
   return {
-    GoogleGenerativeAI: vi.fn().mockImplementation(function (this: any) {
+    GoogleGenerativeAI: vi.fn().mockImplementation(function (this: { getGenerativeModel: unknown }) {
       this.getGenerativeModel = getGenerativeModelMock;
       return this;
     }),
@@ -30,7 +30,7 @@ describe("lib/gemini.ts - generateCultureGuide", () => {
       response: {
         text: () => "invalid json content",
       },
-    } as any);
+    } as unknown as Awaited<ReturnType<typeof mockModel.generateContent>>);
 
     await expect(
       generateCultureGuide({

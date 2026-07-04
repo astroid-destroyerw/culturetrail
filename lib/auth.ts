@@ -9,10 +9,9 @@ export function validateToken(token: string): boolean {
 }
 
 export function issueToken(): string {
-  const token =
-    Math.random().toString(36).slice(2) +
-    Math.random().toString(36).slice(2) +
-    Date.now().toString(36);
+  const token = typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.randomUUID === "function"
+    ? globalThis.crypto.randomUUID()
+    : Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + Date.now().toString(36);
   validTokens.add(token);
   return token;
 }
