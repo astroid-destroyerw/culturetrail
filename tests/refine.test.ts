@@ -1,8 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/refine-guide/route";
 import { NextRequest } from "next/server";
 import { refineGuide } from "@/lib/gemini";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 
 vi.mock("@/lib/gemini", () => ({
   refineGuide: vi.fn(),
