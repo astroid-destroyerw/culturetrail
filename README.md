@@ -9,7 +9,7 @@ CultureTrail is a modern, responsive web application built to help travelers dis
 - **Framework**: Next.js 14 (App Router, Client Components, Server-Side API Handlers)
 - **Styling**: Tailwind CSS (Earthy Dark Theme & Tailwind CSS printing stylesheet configurations)
 - **Programming Language**: TypeScript
-- **AI Engine**: Google Gemini API SDK (using `gemini-1.5-flash` for high-speed response resolution)
+- **AI Engine**: Google Gemini API SDK (using `gemini-2.5-flash` for high-speed response resolution)
 - **Icons**: Lucide React
 
 ---

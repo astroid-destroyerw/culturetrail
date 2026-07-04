@@ -133,7 +133,7 @@ export default function Home() {
           <div className="pt-4">
             <button
               onClick={scrollToForm}
-              className="inline-flex items-center justify-center px-8 py-3 text-base font-semibold rounded-full bg-accent text-background transition-all duration-300 hover:bg-accent/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer select-none active:scale-[0.98]"
+              className="inline-flex items-center justify-center px-8 py-3 text-base font-semibold rounded-full bg-accent text-background transition-all duration-300 hover:bg-[#C55B2E] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background cursor-pointer select-none active:scale-[0.98]"
             >
               Get Started
             </button>
@@ -154,7 +154,7 @@ export default function Home() {
             Tell us about your trip to generate a personalized cultural guide.
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-6 text-left">
+          <form onSubmit={handleSubmit} className="space-y-6 text-left" autoComplete="off">
             {/* Destination Field */}
             <div className="space-y-2">
               <label
@@ -168,10 +168,11 @@ export default function Home() {
                 id="destination"
                 required
                 disabled={isLoading}
+                autoComplete="off"
                 value={destination}
                 onChange={(e) => setDestination(e.target.value)}
                 placeholder="Where are you headed? (e.g. Kyoto, Jaipur, Lisbon)"
-                className="w-full px-4 py-3 bg-foreground/[0.03] border border-foreground/10 rounded-xl text-foreground placeholder-foreground/45 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] placeholder-foreground/60 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -192,7 +193,7 @@ export default function Home() {
                 max={30}
                 value={days}
                 onChange={(e) => setDays(parseInt(e.target.value) || 1)}
-                className="w-full px-4 py-3 bg-foreground/[0.03] border border-foreground/10 rounded-xl text-foreground focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] opacity-100 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -211,10 +212,10 @@ export default function Home() {
                       disabled={isLoading}
                       aria-pressed={isSelected}
                       onClick={() => handleInterestToggle(interest)}
-                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-background ${
+                      className={`px-4 py-2 text-sm font-medium rounded-full border transition-all duration-200 select-none cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                         isSelected
-                          ? "bg-accent border-accent text-background font-semibold"
-                          : "bg-foreground/[0.02] border-foreground/15 text-foreground hover:bg-foreground/[0.05] hover:border-foreground/25"
+                          ? "bg-accent border-accent text-background font-semibold hover:bg-[#C55B2E]"
+                          : "bg-[#1A1714] border-stone-700 text-[#F5EFE6]/80 hover:text-[#F5EFE6] hover:border-stone-600 hover:bg-[#221F1C]"
                       } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       {interest}
@@ -239,7 +240,7 @@ export default function Home() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="e.g. I love street food, want to avoid touristy spots"
-                className="w-full px-4 py-3 bg-foreground/[0.03] border border-foreground/10 rounded-xl text-foreground placeholder-foreground/45 focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/50 transition-colors focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-background resize-y disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full px-4 py-3 bg-[#1A1714] border border-stone-700 rounded-xl text-[#F5EFE6] placeholder-foreground/60 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-colors focus-visible:ring-2 focus-visible:ring-accent resize-y disabled:opacity-50 disabled:cursor-not-allowed"
               />
             </div>
 
@@ -259,9 +260,9 @@ export default function Home() {
                 type="submit"
                 disabled={!isFormValid}
                 aria-disabled={!isFormValid}
-                className={`w-full py-4 px-6 rounded-xl font-bold tracking-wide transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                className={`w-full py-4 px-6 rounded-xl font-bold tracking-wide transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   isFormValid
-                    ? "bg-accent text-background hover:bg-accent/90 cursor-pointer active:scale-[0.99]"
+                    ? "bg-accent text-background hover:bg-[#C55B2E] cursor-pointer active:scale-[0.99]"
                     : "bg-foreground/5 text-foreground/30 border border-foreground/10 cursor-not-allowed"
                 }`}
               >

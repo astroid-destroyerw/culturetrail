@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateCultureGuide } from "@/lib/gemini";
 import { GuideRequest } from "@/types";
+import { geocodeDestination } from "@/lib/geocode";
+import { fetchPOIs, POI } from "@/lib/overpass";
+import { fetchWikiSummary, WikiSummary } from "@/lib/wikipedia";
 
 // In-memory rate limiting map.
-// NOTE: This should be replaced with a persistent, distributed store like Redis/Upstash in production
-// to prevent memory leaks, share rate limit state across multiple serverless instances, and ensure consistency.
+// NOTE: This should be replaced with a persistent, distributed store like Redis/Upstash in production.
 interface RateLimitInfo {
   count: number;
   resetTime: number;
@@ -29,30 +31,32 @@ function sanitizeText(text: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Rate Limiting
-    const ip = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || "127.0.0.1";
+    // 1. Rate Limiting Check
+    const ip = request.headers.get("x-forwarded-for") || "anonymous";
     const now = Date.now();
-    const rateLimit = rateLimitMap.get(ip);
+    const limitWindow = 60 * 1000; // 1 minute
+    const maxRequests = 10;
 
-    if (!rateLimit) {
-      rateLimitMap.set(ip, { count: 1, resetTime: now + 60000 });
-    } else {
-      if (now > rateLimit.resetTime) {
-        rateLimit.count = 1;
-        rateLimit.resetTime = now + 60000;
-      } else {
-        rateLimit.count += 1;
-        if (rateLimit.count > 10) {
-          return NextResponse.json(
-            { error: "Too many requests. Please try again in a minute." },
-            { status: 429 }
-          );
-        }
-      }
+    let rateInfo = rateLimitMap.get(ip);
+    if (!rateInfo || now > rateInfo.resetTime) {
+      rateInfo = {
+        count: 0,
+        resetTime: now + limitWindow,
+      };
     }
 
-    // 2. Parse Request Body
-    let body: Partial<GuideRequest>;
+    if (rateInfo.count >= maxRequests) {
+      return NextResponse.json(
+        { error: "Too many requests. Please wait a minute and try again." },
+        { status: 429 }
+      );
+    }
+
+    rateInfo.count++;
+    rateLimitMap.set(ip, rateInfo);
+
+    // 2. Body Parsing Validation
+    let body;
     try {
       body = await request.json();
     } catch {
@@ -64,10 +68,10 @@ export async function POST(request: NextRequest) {
 
     const { destination, days, interests, notes } = body;
 
-    // 3. Validation
-    if (typeof destination !== "string" || destination.trim() === "") {
+    // 3. Inputs Bounds Validation
+    if (!destination || typeof destination !== "string" || destination.trim() === "") {
       return NextResponse.json(
-        { error: "Destination is required and must be a non-empty string." },
+        { error: "Destination is required." },
         { status: 400 }
       );
     }
@@ -119,7 +123,90 @@ export async function POST(request: NextRequest) {
     const sanitizedDestination = sanitizeText(destination);
     const sanitizedNotes = sanitizeText(notes || "");
 
-    // 5. Generate Guide via Gemini Client
+    // 5. Grounding Data Fetching (RAG Pipeline)
+    let geocodeResult = null;
+    try {
+      geocodeResult = await geocodeDestination(sanitizedDestination);
+    } catch (err) {
+      console.warn("Geocoding failed, proceeding without coordinates:", err);
+    }
+
+    let pois: POI[] = [];
+    if (geocodeResult) {
+      try {
+        pois = await fetchPOIs(geocodeResult.lat, geocodeResult.lng);
+      } catch (err) {
+        console.warn("Overpass POI fetching failed, proceeding without POIs:", err);
+      }
+    }
+
+    let destWikiSummary: WikiSummary | null = null;
+    if (geocodeResult) {
+      try {
+        destWikiSummary = await fetchWikiSummary(sanitizedDestination);
+      } catch (err) {
+        console.warn("Destination Wikipedia summary fetch failed:", err);
+      }
+    }
+
+    const wikiSummaries: WikiSummary[] = [];
+    if (destWikiSummary) {
+      wikiSummaries.push(destWikiSummary);
+    }
+
+    if (pois.length > 0) {
+      const interestTypes = new Set<string>();
+      for (const interest of interests) {
+        if (interest === "Heritage & History") {
+          interestTypes.add("historic");
+          interestTypes.add("religion");
+          interestTypes.add("museum");
+        } else if (interest === "Local Markets") {
+          interestTypes.add("marketplace");
+        } else if (interest === "Nature & Outdoors") {
+          interestTypes.add("viewpoint");
+          interestTypes.add("attraction");
+        } else if (interest === "Art & Design") {
+          interestTypes.add("museum");
+          interestTypes.add("artwork");
+        }
+      }
+
+      // Score POIs by matching category relevance
+      const scoredPois = pois.map((p) => {
+        let score = 0;
+        if (interestTypes.has(p.type)) {
+          score = 2;
+        }
+        return { poi: p, score };
+      });
+
+      scoredPois.sort((a, b) => b.score - a.score);
+
+      // Select top 5 and fetch Wiki summaries concurrently
+      const top5Scored = scoredPois.slice(0, 5).map((sp) => sp.poi);
+      const wikiPromises = top5Scored.map(async (p) => {
+        try {
+          return await fetchWikiSummary(p.name);
+        } catch {
+          return null;
+        }
+      });
+
+      const results = await Promise.all(wikiPromises);
+      for (const r of results) {
+        if (r) {
+          wikiSummaries.push(r);
+        }
+      }
+    }
+
+    const hasUsablePois = pois.length >= 5;
+    if (!hasUsablePois) {
+      console.warn(`Obscure destination or empty POIs returned. POIs length: ${pois.length}. Falling back to Gemini self-knowledge.`);
+    }
+
+    // 6. Generate Guide via Gemini Client
     const guideInput: GuideRequest = {
       destination: sanitizedDestination,
       days,
@@ -128,9 +215,18 @@ export async function POST(request: NextRequest) {
     };
 
     try {
-      const guideResult = await generateCultureGuide(guideInput);
+      const guideResult = await generateCultureGuide(
+        guideInput,
+        hasUsablePois ? { pois, wikiSummaries } : undefined
+      );
+
+      // Append destination Wikipedia summary if available for display
+      if (destWikiSummary) {
+        guideResult.wikiSummary = destWikiSummary.extract;
+      }
+
       return NextResponse.json(guideResult, { status: 200 });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Gemini generation/parsing error:", error);
       const errMsg = error instanceof Error ? error.message : String(error);
       if (
@@ -145,11 +241,10 @@ export async function POST(request: NextRequest) {
           { status: 422 }
         );
       }
-      throw error; // Re-throw to be caught by the outer block as a 500 error
+      throw error;
     }
 
   } catch (error) {
-    // 7. Error Handling (Log details server-side, hide from client)
     console.error("API generate-guide error:", error);
     return NextResponse.json(
       { error: "Something went wrong generating your guide. Please try again." },

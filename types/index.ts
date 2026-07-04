@@ -5,46 +5,23 @@ export interface GuideRequest {
   notes: string;
 }
 
-export interface Attraction {
-  name: string;
+export interface ActivityDetail {
+  activity: string;
   description: string;
-  whyVisit: string;
+  type: string;
+  lat: number;
+  lng: number;
 }
 
-export interface HiddenGem {
-  name: string;
-  description: string;
-  howToFind: string;
-}
-
-export interface Story {
-  title: string;
-  narrative: string;
-}
-
-export interface HeritageItem {
-  title: string;
-  description: string;
-}
-
-export interface LocalEvent {
-  name: string;
-  description: string;
-  typicalTiming: string;
-}
-
-export interface CulturalExperience {
-  name: string;
-  description: string;
-  howToEngage: string;
+export interface DayItinerary {
+  day: number;
+  morning: ActivityDetail;
+  afternoon: ActivityDetail;
+  evening: ActivityDetail;
 }
 
 export interface GuideResponse {
   destination: string;
-  attractions: Attraction[];
-  hiddenGems: HiddenGem[];
-  story: Story;
-  heritage: HeritageItem[];
-  localEvents: LocalEvent[];
-  culturalExperiences: CulturalExperience[];
+  days: DayItinerary[];
+  wikiSummary?: string;
 }
