@@ -3,25 +3,31 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #0F0D0B;
+  --foreground: #F5EFE6;
+  --accent: #D96C3F;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  /* Avoid page breaks inside sections and cards */
+  .grid > div, section, fieldset {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  /* Muted colors adjustment for ink-saving printing */
+  h1, h2, h3 {
+    color: black !important;
+  }
+  p, span, li, legend {
+    color: #222 !important;
   }
 }

@@ -1,36 +1,68 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CultureTrail 🗺️
 
-## Getting Started
+CultureTrail is a modern, responsive web application built to help travelers discover authentic, hyper-local destinations, stories, and cultural heritage. Powered by Google Gemini AI, it generates custom cultural guides containing offbeat attractions, local folk tales, heritage context, seasonal festivals, and interactive activities.
 
-First, run the development server:
+---
 
+## 🚀 Tech Stack
+
+- **Framework**: Next.js 14 (App Router, Client Components, Server-Side API Handlers)
+- **Styling**: Tailwind CSS (Earthy Dark Theme & Tailwind CSS printing stylesheet configurations)
+- **Programming Language**: TypeScript
+- **AI Engine**: Google Gemini API SDK (using `gemini-1.5-flash` for high-speed response resolution)
+- **Icons**: Lucide React
+
+---
+
+## 🛠️ Getting Started & Local Setup
+
+### 1. Prerequisites
+Ensure you have **Node.js** (v18.x or later) and **npm** installed on your local environment.
+
+### 2. Environment Configuration
+Create a `.env.local` file in the root of the project:
+```env
+GEMINI_API_KEY=your_gemini_api_key_here
+```
+*(You can duplicate `.env.local.example` as a template. Note that `.env.local` is pre-configured to be ignored by git).*
+
+### 3. Install Dependencies
+Navigate to the project directory and run:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 4. Start the Development Server
+Execute the development command:
+```bash
+npm run dev
+```
+Open your browser and navigate to the printed local port (typically [http://localhost:3000](http://localhost:3000)) to explore the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🏛️ Architectural Decisions
 
-## Learn More
+### 1. Client-Side Stateless Cache (`sessionStorage`)
+To keep the application scalable and serverless-friendly, CultureTrail does not require an active database connection for user guides. Instead:
+- When a search is submitted, the API returns the parsed guide JSON.
+- The client component stores it inside `sessionStorage` under the `"cultureGuideData"` key.
+- The `/results` page hydrates using this sessionStorage cache.
+- Wiping the data (via "New Search") instantly resets application state.
 
-To learn more about Next.js, take a look at the following resources:
+### 2. Structured JSON Output Constraints
+Rather than parsing markdown text streams (which can break due to unstructured prose, extra formatting, or markdown backticks), the Gemini integration in `lib/gemini.ts` explicitly enforces the API parameters:
+- Configures `responseMimeType: "application/json"`.
+- Requests a strictly defined JSON outline containing structured attractions, gems, folklore narrative text, and schedule arrays.
+- This results in a 100% predictable parseable model response.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### 3. Zero-Dependency Scroll Reveal Components
+Entrance animations are handled by a lightweight [FadeIn.tsx](components/FadeIn.tsx) wrapper that uses a native browser `IntersectionObserver` instance combined with smooth Tailwind transform classes. This yields premium transitions as the user scrolls, while avoiding large bundles like Framer Motion.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### 4. Input Sanitization & 422 Error Guards
+- Requests sent to `/api/generate-guide` pass through string checks verifying size limits (e.g. destinations under 100 characters, notes under 500 characters).
+- Input inputs are stripped of HTML/script elements using custom regex sanitizers to prevent cross-site scripting (XSS).
+- If Gemini returns empty/malformed text structure due to nonsense destinations, the route handler intercepts the throw and responds with a `422 Unprocessable Entity` status, suggesting more specific queries.
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 5. Print Optimization
+The dashboard includes a customized print layout via Tailwind's built-in `print:` selectors. Entering Print mode (`Ctrl + P`) automatically hides headers, navigation buttons, and decorative glows, while formatting cards cleanly for ink-saving paper printing or PDF export.
